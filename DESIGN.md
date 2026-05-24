@@ -483,6 +483,72 @@ float literals for all finite values; `max_dt = None` is simply omitted
 
 ---
 
+## `keppy/solar_system/` — Built-in Body Data and JPL Horizons Fetcher
+
+### `bodies.py` — Physical data only, no orbital state
+
+`BodyData` is a frozen dataclass holding `mu`, `radius`, and
+`j_coefficients` for each body.  It deliberately has **no** position or
+velocity: those are either provided by the caller or fetched from Horizons.
+This separation of concerns means the physical data catalogue never goes
+stale (masses and radii change far more slowly than orbital positions).
+
+The `BODY_DATA` dictionary covers the Sun, eight planets, the Moon, Pluto,
+and Ceres.  `make_body(name, position, velocity)` combines catalogue data
+with caller-supplied state vectors into a `Body`.  One-liner aliases
+(`sun()`, `earth()`, …) default position and velocity to zero, useful when
+state vectors will be assigned later.
+
+### `horizons.py` — JPL Horizons web API
+
+The [JPL Horizons API](https://ssd.jpl.nasa.gov/api/horizons.api) is
+queried with `urllib.request` (stdlib, no extra dependencies) for
+Cartesian state vectors in the ecliptic J2000 barycentric frame.
+Output units are km and km/s; both are converted to SI (m, m/s) before
+being stored in the `Body`.
+
+`HORIZONS_IDS` maps lower-case body names to Horizons numeric IDs.
+Planets use system-barycentric IDs (1–8) so that satellite masses are
+automatically included.  Earth uses geocenter (399) rather than the
+Earth-Moon barycenter (3) so that the Moon can be queried and modelled
+separately at full accuracy.
+
+#### Response parsing
+The Horizons text response is parsed with two compiled regular expressions
+(`_XYZ_RE`, `_VEL_RE`) that extract values between the `$$SOE` and `$$EOE`
+markers.  The patterns handle both the positive-value format
+(`X = 1.496E+08`) and the negative-value format (`X =-2.622E+07`, no space
+between `=` and `-`) that Horizons uses.
+
+#### `fetch_body` design
+`fetch_body(name, epoch, ...)` accepts optional keyword overrides
+(`horizons_id`, `mu`, `mass`, `radius`) so that bodies not in the built-in
+catalogue (minor planets, spacecraft targets, etc.) can still be queried by
+passing a Horizons ID and explicit physical parameters.  If neither the
+catalogue nor the caller supplies a gravitational parameter, a `HorizonsError`
+is raised immediately with a helpful message.
+
+#### `fetch_system` and barycentric coordinates
+`fetch_system` makes one HTTP request per body and returns a `NBodySystem`.
+`translate_to_barycenter` defaults to `False` because Horizons vectors with
+`CENTER=500@0` are already in the solar system barycentric frame; applying
+a second barycenter translation would introduce small numerical errors.
+
+#### Network test strategy
+Live tests (those that actually call the Horizons API) are decorated with
+`@requires_live` and skipped when the API is not reachable.  All other
+tests use `unittest.mock.patch` to replace `urllib.request.urlopen` with
+a pre-recorded response string, so the test suite is fully deterministic in
+offline environments.
+
+### Saturn J2 > Jupiter J2
+Saturn's zonal oblateness coefficient J2 (0.01630) is larger than
+Jupiter's (0.01470).  This is physically correct: Saturn has lower mean
+density (0.687 g/cm³ vs Jupiter's 1.33 g/cm³) and a similar rotation
+period, so its equatorial bulge is proportionally larger.
+
+---
+
 ## Roadmap
 
 | Step | Module | Status |
@@ -493,5 +559,5 @@ float literals for all finite values; `max_dt = None` is simply omitted
 | 4 | `timestep.py` — adaptive step sizing | ✅ Done |
 | 5 | `orbital.py` — state vectors ↔ Keplerian elements | ✅ Done |
 | 6 | `io/` — config reader/writer, trajectory output | ✅ Done |
-| 7 | `solar_system/` — built-in bodies, JPL Horizons fetcher | ⬜ |
+| 7 | `solar_system/` — built-in bodies, JPL Horizons fetcher | ✅ Done |
 | 8 | Visualization — matplotlib / plotly | ⬜ |
