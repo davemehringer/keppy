@@ -21,6 +21,12 @@ from keppy.timestep import (
     ScaledTimeStepManager,
     run,
 )
+from keppy.orbital import (
+    Elements,
+    elements_to_vectors,
+    solve_kepler,
+    vectors_to_elements,
+)
 from keppy import constants
 
 __all__ = [
@@ -36,5 +42,9 @@ __all__ = [
     "AccelerationTimeStepManager",
     "ScaledTimeStepManager",
     "run",
+    "Elements",
+    "elements_to_vectors",
+    "solve_kepler",
+    "vectors_to_elements",
     "constants",
 ]

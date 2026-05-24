@@ -322,6 +322,88 @@ significant feature, left for a future step.
 
 ---
 
+## `keppy/orbital.py` — Orbital Element Conversions
+
+### `Elements` as a dataclass with NaN for undefined angles
+
+The six classical Keplerian elements (a, e, i, Ω, ω, M) map cleanly to a
+Python dataclass.  Rather than using sentinel values (0, -1, or raising an
+exception), undefined angles are stored as `float("nan")`:
+
+| Situation | Undefined quantity |
+|-----------|-------------------|
+| Equatorial orbit (i = 0 or 180°) | `node` (Ω) — no ascending node |
+| Circular orbit (e = 0) | `peri` (ω) and `M` — no pericenter |
+
+This matches the behavior of most reference implementations and avoids silent
+wrong values: any downstream computation that uses a nan will produce a nan,
+making the error visible immediately.
+
+### `a` in meters (SI)
+The C++ code stored `a` in astronomical units, requiring KM_PER_AU at every
+call site.  Storing `a` in SI meters makes the vis-viva equation and the
+period formula dimensionally self-consistent without any conversion.
+
+### Single `mu` parameter
+The C++ `keplerpp` took two separate arguments `mu_primary` and `mu_secondary`
+(G × each mass) which callers always summed.  A single `mu = G × M_total` is
+cleaner and matches every standard orbital mechanics reference.
+
+### Newton-Raphson for Kepler's equation
+`solve_kepler(M, e)` uses Newton-Raphson with a Danby (1988) initial guess
+instead of the C++ fixed-point iteration.  Newton-Raphson converges
+quadratically (each step roughly doubles the correct digits), whereas
+fixed-point converges linearly.  For e → 1 the fixed-point method can require
+hundreds of iterations; Newton-Raphson converges in 4–6 steps for any e < 1.
+
+### Perifocal frame decomposition for `elements_to_vectors`
+The perifocal frame (P, Q) unit vectors are formed from the rotation matrix
+that maps the orbital plane into the reference frame:
+
+```
+P = R(Ω) · R(i) · R(ω) · [1, 0, 0]^T
+Q = R(Ω) · R(i) · R(ω) · [0, 1, 0]^T
+```
+
+Position and velocity in the perifocal frame then use the standard elliptic
+expressions:
+
+```
+r    = a(cos E - e) P + a sqrt(1-e²) sin E  Q
+r_dot = sqrt(mu/a) / (1 - e cos E)  ×  (-sin E  P + sqrt(1-e²) cos E  Q)
+```
+
+This is identical to the C++ implementation — the math is the same, just
+expressed with NumPy arrays instead of component-wise multiplications.
+
+### Edge-case handling in `vectors_to_elements`
+All degenerate cases are handled explicitly:
+
+* **Equatorial** (|h_z| / |h| ≈ 1, so `n_mag` ≈ 0): `node = nan`.
+* **Circular** (|e_vec| ≈ 0): `peri = nan`, `M = nan`.  The true anomaly for
+  display purposes is measured from the ascending node (or from the x-axis for
+  a circular equatorial orbit) but is not stored as `M` (which has no meaning
+  when there is no pericenter).
+* **Circular equatorial**: both `node = nan` and `peri = nan`.
+
+The C++ code returned `0.0` for all these cases, which could be silently wrong
+in downstream computations.
+
+### `_clamp(x, lo, hi)` guard before `acos`/`asin`
+Floating-point arithmetic can produce values like 1.0000000000000002 due to
+rounding, which causes `math.acos` to raise a domain error.  The `_clamp`
+helper clips arguments to `[-1, 1]` before every inverse trig call, exactly as
+the C++ code used `std::max(-1.0, std::min(1.0, x))`.
+
+### `period` property returns `nan`; `period_from_mu(mu)` is a method
+`Elements` does not store `mu`, so the period cannot be computed without it.
+The `period` property returns `nan` to signal "not available" rather than
+raising an error.  `period_from_mu(mu)` is the explicit method to call when
+`mu` is known.  This avoids the temptation to store `mu` inside `Elements`
+(which would make it a mix of orbital state and physical parameter).
+
+---
+
 ## Roadmap
 
 | Step | Module | Status |
@@ -330,7 +412,7 @@ significant feature, left for a future step.
 | 2 | `acceleration.py` | ✅ Done |
 | 3 | `integrator.py` — RK4, adaptive RK, symplectic | ✅ Done |
 | 4 | `timestep.py` — adaptive step sizing | ✅ Done |
-| 5 | `orbital.py` — state vectors ↔ Keplerian elements | ⬜ |
+| 5 | `orbital.py` — state vectors ↔ Keplerian elements | ✅ Done |
 | 6 | `io/` — config reader/writer, trajectory output | ⬜ |
 | 7 | `solar_system/` — built-in bodies, JPL Horizons fetcher | ⬜ |
 | 8 | Visualization — matplotlib / plotly | ⬜ |
