@@ -275,6 +275,53 @@ size, not the integrator order.  The tests use:
 
 ---
 
+## `keppy/timestep.py` — TimeStepManagers
+
+### `TimeStepManager` is a Protocol
+Consistent with the rest of the library.  Any object exposing a `dt` property
+and an `update(acc_before, acc_after) -> ChangeType` method satisfies the
+interface without forced inheritance.
+
+### `update()` returns `ChangeType` and mutates `dt` atomically
+The C++ design returned an enum from `modify()` and required a separate
+`getDeltaT()` call to retrieve the new step.  In keppy, `update()` does both
+in one call: the caller gets the verdict and `tsm.dt` is already updated.
+
+### `ConstantTimeStepManager`
+Trivially satisfies the protocol with `update()` always returning `NO_CHANGE`.
+Useful for using `run()` with a fixed step size without special-casing.
+
+### `AccelerationTimeStepManager` — faithful to C++ keplerpp
+Computes the per-body fractional acceleration change
+`q_i = max_component(|Δa_i| / |a_i|)` and applies binary factor-of-2 scaling
+(configurable) with three outcomes: DECREASE / NO_CHANGE / INCREASE.
+
+Improvement: `min_dt` and `max_dt` guard rails prevent pathological step sizes;
+the C++ version had neither.
+
+### `ScaledTimeStepManager` — smooth continuous scaling
+Instead of a binary jump, scales dt continuously:
+`dt_new = dt * (q_target / q) ** exponent`.
+This eliminates oscillation near the threshold boundary that the binary
+approach can exhibit.  Uses RMS fractional change over all components and all
+bodies for a single scalar quality metric `q`.
+
+### `run()` helper
+Encapsulates the retry loop (save state → step → evaluate → rollback if
+DECREASE → retry) so callers do not need to reimplement it.  Returns a list of
+`StepRecord` snapshots for downstream analysis or plotting.
+
+The C++ retry logic was embedded inside the integrator `_step()` methods,
+coupling integration algorithm to step-size control.  In keppy these concerns
+are fully separated: any integrator works with any TimeStepManager via `run()`.
+
+### `TargetedAccelerationTimeStepManager` — not yet implemented
+The C++ version included a per-body independent stepping scheme (block-step
+method) where different bodies could use different step sizes.  This is a
+significant feature, left for a future step.
+
+---
+
 ## Roadmap
 
 | Step | Module | Status |
@@ -282,7 +329,7 @@ size, not the integrator order.  The tests use:
 | 1 | `body.py`, `nbody_system.py` | ✅ Done |
 | 2 | `acceleration.py` | ✅ Done |
 | 3 | `integrator.py` — RK4, adaptive RK, symplectic | ✅ Done |
-| 4 | `timestep.py` — adaptive step sizing | ⬜ |
+| 4 | `timestep.py` — adaptive step sizing | ✅ Done |
 | 5 | `orbital.py` — state vectors ↔ Keplerian elements | ⬜ |
 | 6 | `io/` — config reader/writer, trajectory output | ⬜ |
 | 7 | `solar_system/` — built-in bodies, JPL Horizons fetcher | ⬜ |
