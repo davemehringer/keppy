@@ -3,7 +3,7 @@ Body — a single gravitating particle in an N-body simulation.
 
 Improvements over the C++ keplerpp Body struct:
   * Uses numpy arrays for all vectors (position, velocity, acceleration).
-    This avoids custom vector arithmetic and enables vectorised NumPy ops
+    This avoids custom vector arithmetic and enables vectorized NumPy ops
     throughout the rest of the library.
   * Python Enum for Frame and Origin instead of plain C-style enums.
   * mass is a first-class attribute; mu is derived from it (or vice-versa)
@@ -40,7 +40,7 @@ class Frame(Enum):
 class Origin(Enum):
     """Coordinate origin for position and velocity vectors."""
     CENTER_BODY = auto()         # relative to the body being orbited
-    SYSTEM_BARYCENTER = auto()   # relative to the system's centre of mass
+    SYSTEM_BARYCENTER = auto()   # relative to the system's center of mass
 
 
 # ---------------------------------------------------------------------------
@@ -54,7 +54,7 @@ class Body:
 
     Units
     -----
-    All distances    : metres  (m)
+    All distances    : meters  (m)
     All velocities   : m s⁻¹
     All accelerations: m s⁻²
     mass             : kg
@@ -66,13 +66,13 @@ class Body:
     Parameters
     ----------
     name        : Human-readable label.
-    position    : 3-vector, metres.
+    position    : 3-vector, meters.
     velocity    : 3-vector, m s⁻¹.
     mass        : Body mass in kg.  Pass exactly one of mass / mu.
     mu          : Gravitational parameter G·m in m³ s⁻².
-    radius      : Mean equatorial radius in metres (0 if unknown).
+    radius      : Mean equatorial radius in meters (0 if unknown).
     j_coefficients : Zonal harmonic coefficients [J2, J3, …].
-    center_body : Body this body orbits (None for the primary / barycentre).
+    center_body : Body this body orbits (None for the primary / barycenter).
     frame       : Reference frame of the position/velocity vectors.
     origin      : Coordinate origin of the position/velocity vectors.
     rotation_matrix : 3×3 body-frame rotation matrix (or None).

@@ -15,7 +15,7 @@ from keppy.constants import G
 def two_body_system(translate: bool = True) -> NBodySystem:
     """
     Sun + Earth in circular orbit, separated by 1 AU.
-    Placed symmetrically about their shared barycentre so that
+    Placed symmetrically about their shared barycenter so that
     translate_to_barycenter() is effectively a no-op.
     """
     mu_sun = 1.327_124_4e20  # m^3 s^-2
@@ -23,11 +23,11 @@ def two_body_system(translate: bool = True) -> NBodySystem:
     mass_earth = 5.972e24
 
     M = mass_sun + mass_earth
-    r = 1.495_978_707e11          # 1 AU in metres
+    r = 1.495_978_707e11          # 1 AU in meters
     # Circular orbital speed for the relative motion
     v_rel = (G * M / r) ** 0.5
 
-    # Place each body at its barycentre offset
+    # Place each body at its barycenter offset
     x_sun = -r * mass_earth / M
     x_earth = r * mass_sun / M
     v_sun = -v_rel * mass_earth / M
@@ -66,7 +66,7 @@ class TestNBodySystemConstruction:
 
 
 # ---------------------------------------------------------------------------
-# Barycentre
+# Barycenter
 # ---------------------------------------------------------------------------
 
 class TestBarycenter:

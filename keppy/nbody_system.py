@@ -2,7 +2,7 @@
 NBodySystem — manages a collection of gravitating bodies.
 
 Improvements over the C++ keplerpp NBodySystem:
-  * Bodies are stored as a plain list; numpy is used for vectorised
+  * Bodies are stored as a plain list; numpy is used for vectorized
     energy and momentum calculations instead of manual loops.
   * The barycenter translation is an explicit, named method rather than
     hidden inside the constructor — callers can choose when (or whether)
@@ -36,7 +36,7 @@ class NBodySystem:
     bodies    : Initial collection of Body objects.
     time      : Start time in seconds (default 0).
     translate_to_barycenter : If True (default), shift all positions so
-                              the system's centre of mass is at the origin,
+                              the system's center of mass is at the origin,
                               and adjust velocities to zero the bulk momentum.
 
     Notes
@@ -130,7 +130,7 @@ class NBodySystem:
         return self._time / YEAR
 
     # ------------------------------------------------------------------
-    # Centre-of-mass helpers
+    # Center-of-mass helpers
     # ------------------------------------------------------------------
 
     @property
@@ -145,7 +145,7 @@ class NBodySystem:
 
     def barycenter(self) -> np.ndarray:
         """
-        Return the position of the system's centre of mass (m).
+        Return the position of the system's center of mass (m).
 
         Returns
         -------
@@ -157,7 +157,7 @@ class NBodySystem:
 
     def barycenter_velocity(self) -> np.ndarray:
         """
-        Return the velocity of the system's centre of mass (m s⁻¹).
+        Return the velocity of the system's center of mass (m s⁻¹).
 
         A non-zero value means the system has bulk linear drift.
 
@@ -171,7 +171,7 @@ class NBodySystem:
 
     def translate_to_barycenter(self) -> None:
         """
-        Shift all positions so the centre of mass is at the origin and
+        Shift all positions so the center of mass is at the origin and
         subtract any bulk velocity so the total linear momentum is zero.
 
         This is idempotent: calling it multiple times has no extra effect
@@ -259,7 +259,7 @@ class NBodySystem:
 
         Returns
         -------
-        positions  : shape (n, 3)  metres
+        positions  : shape (n, 3)  meters
         velocities : shape (n, 3)  m s⁻¹
         """
         positions = np.stack([b.position for b in self._bodies])
@@ -272,7 +272,7 @@ class NBodySystem:
 
         Parameters
         ----------
-        positions  : shape (n, 3)  metres
+        positions  : shape (n, 3)  meters
         velocities : shape (n, 3)  m s⁻¹
         """
         if positions.shape != (self.n, 3) or velocities.shape != (self.n, 3):

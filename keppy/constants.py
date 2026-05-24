@@ -7,7 +7,7 @@ All values are in SI units unless otherwise noted.
 # Gravitational constant (m^3 kg^-1 s^-2)
 G: float = 6.674_30e-11
 
-# Astronomical unit in metres
+# Astronomical unit in meters
 AU: float = 1.495_978_707e11
 
 # Julian day in seconds

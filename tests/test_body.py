@@ -51,7 +51,7 @@ class TestBodyConstruction:
                            position=np.array([1.0, 2.0]),
                            velocity=np.zeros(3))
 
-    def test_acceleration_initialised_to_zero(self):
+    def test_acceleration_initialized_to_zero(self):
         b = Body.from_mass("Z", 1e20, np.zeros(3), np.zeros(3))
         np.testing.assert_array_equal(b.acceleration, [0.0, 0.0, 0.0])
 

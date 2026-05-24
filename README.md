@@ -7,7 +7,7 @@ a pair-wise N-body gravitational simulation library.
 
 * **Pure Python + NumPy** — no compiled extensions required, but NumPy
   vectorisation keeps inner loops fast.
-* **Explicit units** — all quantities are in SI (metres, seconds, kilograms)
+* **Explicit units** — all quantities are in SI (meters, seconds, kilograms)
   unless a property name says otherwise (e.g. `time_days`).
 * **Clean separation of concerns** — `Body` holds state, `NBodySystem`
   manages the collection and conserved quantities, integrators and
