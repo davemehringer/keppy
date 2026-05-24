@@ -8,11 +8,21 @@ with a clean Python / NumPy interface.
 from keppy.body import Body, Frame, Origin
 from keppy.nbody_system import NBodySystem
 from keppy.acceleration import PairwiseAccelerationCalculator
+from keppy.integrator import (
+    RK4Integrator,
+    RK45Integrator,
+    LeapfrogIntegrator,
+    YoshidaIntegrator,
+)
 from keppy import constants
 
 __all__ = [
     "Body", "Frame", "Origin",
     "NBodySystem",
     "PairwiseAccelerationCalculator",
+    "RK4Integrator",
+    "RK45Integrator",
+    "LeapfrogIntegrator",
+    "YoshidaIntegrator",
     "constants",
 ]

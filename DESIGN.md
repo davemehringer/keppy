@@ -203,13 +203,85 @@ off-by-one indexing in the C++ code where `body.j->operator[](2)` was J2.
 
 ---
 
+## `keppy/integrator.py` — Integrators
+
+### `Integrator` is a Protocol, not an ABC
+The C++ base class used pure virtual inheritance.  A Python `Protocol` gives the
+same contract with duck typing: any object with `step(system, dt) -> float`
+satisfies it, including thin wrappers around third-party solvers.
+
+### `step()` returns the actual dt taken
+All integrators return the actual time step from `step()`.  `NBodySystem.step()`
+uses the returned value to advance its internal clock.  This makes adaptive
+integrators (RK45) transparent: the caller sees exactly how far time advanced
+without needing to query internal state.
+
+### `NBodySystem.step()` updated to use the return value
+In step 1 the method returned `None` and always added the requested `dt` to the
+clock.  In step 3 it returns `float` (the actual step taken) so adaptive methods
+work correctly.
+
+### RK4 — classical fixed-step
+Four force evaluations per step, O(dt⁴) global error.  Not symplectic: energy
+error grows secularly over long integrations.  Useful as a reference/validation
+integrator.
+
+### RK45 (Dormand-Prince) — adaptive
+Uses the standard Dormand-Prince Butcher tableau.  On each call, retries with a
+smaller step if the RMS scaled error exceeds 1.0; otherwise the requested dt is
+accepted.  Suitable when accuracy matters more than computational cost or when
+forces vary on multiple timescales.
+
+Note: the adaptive tolerance controls LOCAL error per step.  GLOBAL orbit-closure
+accuracy requires either a tight tolerance or a fine step suggestion.  With
+rtol=1e-9 and a coarse (1-day) suggested step, each step is individually
+accurate but global phase drift can still be large — this is expected behavior
+for local-error controllers and is documented in the test comments.
+
+### Leapfrog (KDK Velocity Verlet) — symplectic 2nd-order
+The Kick-Drift-Kick form requires only one force evaluation per step after
+initialization (the end-of-step acceleration is cached and reused as the
+start-of-step acceleration for the next step).  Being symplectic, it preserves
+a shadow Hamiltonian exactly: energy error oscillates but never drifts
+secularly, making it far superior to RK4 for long orbital integrations despite
+being only 2nd-order.
+
+The `reset()` method clears the cached acceleration for cases where body state
+is modified externally between steps.
+
+### Yoshida — symplectic 4th-order
+Uses the standard Yoshida (1990) triple-jump coefficients (three force
+evaluations per step) to achieve 4th-order accuracy while remaining symplectic.
+It is the recommended default for high-accuracy long-run simulations.
+
+### Choosing an integrator
+| Use case | Recommended |
+|----------|-------------|
+| Short integrations, validation | RK4Integrator |
+| Variable time scales, need accuracy | RK45Integrator |
+| Long orbital integrations | LeapfrogIntegrator (safe default) |
+| Long + high accuracy | YoshidaIntegrator |
+
+### Orbit-closure test design
+A naive "run for one year, check Earth returns to [AU, 0, 0]" test fails with
+dt = 1 day because the integration error at that step size is ~2.58 × 10⁹ m
+(4th-order methods) or ~2.48 × 10⁹ m (leapfrog) — dominated by the large step
+size, not the integrator order.  The tests use:
+- n = 3650 steps (~2.4 h per step) for orbit-closure tests: RK4 gives ~0.2 m
+  error, Yoshida gives ~7 m error.
+- Leapfrog is 2nd-order and needs ~36 000 steps for km-level closure; instead
+  we test orbital-radius preservation (the symplectic invariant that leapfrog
+  does protect well at any step size).
+
+---
+
 ## Roadmap
 
 | Step | Module | Status |
 |------|--------|--------|
 | 1 | `body.py`, `nbody_system.py` | ✅ Done |
 | 2 | `acceleration.py` | ✅ Done |
-| 3 | `integrator.py` — RK4, adaptive RK, symplectic | ⬜ Next |
+| 3 | `integrator.py` — RK4, adaptive RK, symplectic | ✅ Done |
 | 4 | `timestep.py` — adaptive step sizing | ⬜ |
 | 5 | `orbital.py` — state vectors ↔ Keplerian elements | ⬜ |
 | 6 | `io/` — config reader/writer, trajectory output | ⬜ |

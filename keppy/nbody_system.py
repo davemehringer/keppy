@@ -139,6 +139,11 @@ class NBodySystem:
         return np.array([b.mass for b in self._bodies])
 
     @property
+    def mus(self) -> np.ndarray:
+        """1-D array of gravitational parameters G·m (m³ s⁻²), ordered as stored."""
+        return np.array([b.mu for b in self._bodies])
+
+    @property
     def total_mass(self) -> float:
         """Total system mass in kg."""
         return float(self.masses.sum())
@@ -288,18 +293,24 @@ class NBodySystem:
     # Simulation step  (integrator/accelerator are injected later)
     # ------------------------------------------------------------------
 
-    def step(self, dt: float, integrator) -> None:
+    def step(self, dt: float, integrator) -> float:
         """
-        Advance the simulation by *dt* seconds using *integrator*.
+        Advance the simulation by (up to) *dt* seconds using *integrator*.
 
         Parameters
         ----------
-        dt         : Time step in seconds.
-        integrator : An object with a ``step(system, dt)`` method
-                     (to be provided by the Integrator module).
+        dt         : Requested time step in seconds.
+        integrator : An object with a ``step(system, dt) -> float`` method.
+
+        Returns
+        -------
+        float
+            The actual time step taken.  For fixed-step integrators this
+            equals *dt*; for adaptive integrators it may be smaller.
         """
-        integrator.step(self, dt)
-        self._time += dt
+        actual_dt = integrator.step(self, dt)
+        self._time += actual_dt
+        return actual_dt
 
     # ------------------------------------------------------------------
     # Display
