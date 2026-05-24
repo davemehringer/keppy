@@ -30,6 +30,7 @@ from keppy.orbital import (
 from keppy import constants
 from keppy import io
 from keppy import solar_system
+from keppy import viz
 
 __all__ = [
     "Body", "Frame", "Origin",
@@ -51,4 +52,5 @@ __all__ = [
     "constants",
     "io",
     "solar_system",
+    "viz",
 ]

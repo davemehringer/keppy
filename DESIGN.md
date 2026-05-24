@@ -549,6 +549,63 @@ period, so its equatorial bulge is proportionally larger.
 
 ---
 
+## `keppy/viz/` — Matplotlib Visualization
+
+### Optional dependency
+
+matplotlib is listed under `[project.optional-dependencies] viz` in
+`pyproject.toml` rather than as a hard dependency.  The viz package raises
+`ModuleNotFoundError` with an install hint at import time rather than
+silently doing nothing, so users know exactly what to install.
+
+### Four focused functions
+
+| Function | Input | Output |
+|---|---|---|
+| `plot_trajectory` | `list[StepRecord]` | Body paths over time |
+| `plot_orbit` | `Elements` + mu | Orbital ellipse sampled at N anomalies |
+| `plot_system` | `NBodySystem` | Snapshot of current body positions |
+| `plot_energy` | `list[StepRecord]` + mus | Total energy (or relative error) vs time |
+
+### Axes are returned, not shown
+
+All functions return the `matplotlib.axes.Axes` they drew on.  They never
+call `plt.show()` — that is the caller's responsibility.  This follows the
+matplotlib object-oriented idiom and makes embedding plots in larger figures
+easy: call any function with an existing `ax=` argument to draw onto it.
+
+### `unit` and `time_unit` parameters
+
+Spatial axes accept `unit="au"`, `"km"`, or `"m"`.  Time axes accept
+`time_unit="s"`, `"h"`, `"day"`, or `"year"`.  All stored data stays in
+SI; the conversion factor is applied only to the plotted values.  This
+avoids unit-conversion bugs in the physics code while giving readable plots.
+
+### 2-D and 3-D support
+
+A `plane` parameter selects the projection: `"xy"`, `"xz"`, `"yz"`, or
+`"3d"`.  For `"3d"` a `matplotlib` `Axes3D` is created (or required if an
+existing axes is passed).  The same API works for all four projections.
+
+### `plot_orbit` sampling strategy
+
+The orbit is sampled by iterating `M` from 0° to 360° in `n_points` steps
+and calling `elements_to_vectors` at each value.  This correctly handles
+all inclinations and non-zero Ω and ω without any special-case 2-D
+geometry, at the cost of one `solve_kepler` call per point.  For a typical
+`n_points=360` this takes < 1 ms.
+
+### `plot_energy` diagnostic
+
+`_compute_total_energy` recomputes KE + PE from scratch at each step using
+the stored positions and velocities and the caller-supplied `mus` array.
+This is independent of the integrator — no internal integrator state is
+inspected.  The `relative=True` default plots `(E − E₀) / |E₀|`, which
+immediately reveals whether the integrator conserves energy and at what
+level (Leapfrog: oscillates near 10⁻⁶; RK4: drifts secularly).
+
+---
+
 ## Roadmap
 
 | Step | Module | Status |
@@ -560,4 +617,4 @@ period, so its equatorial bulge is proportionally larger.
 | 5 | `orbital.py` — state vectors ↔ Keplerian elements | ✅ Done |
 | 6 | `io/` — config reader/writer, trajectory output | ✅ Done |
 | 7 | `solar_system/` — built-in bodies, JPL Horizons fetcher | ✅ Done |
-| 8 | Visualization — matplotlib / plotly | ⬜ |
+| 8 | `viz/` — matplotlib visualization | ✅ Done |
