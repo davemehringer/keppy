@@ -606,6 +606,91 @@ level (Leapfrog: oscillates near 10⁻⁶; RK4: drifts secularly).
 
 ---
 
+## `keppy/viz/interactive.py` — `OrbitViewer`
+
+### Goal
+
+The C++ keplerpp application includes an interactive orbit viewer that lets
+the user toggle body name labels on and off and dynamically change which
+body is at the center of the reference frame while the simulation plays.
+`OrbitViewer` reproduces both features as a matplotlib figure with live
+controls alongside a `FuncAnimation` playback loop.
+
+### Layout: orbit axes + two widget panels
+
+The figure is split horizontally: the main orbit axes occupy the left 65%
+of the figure, and two stacked widget panels occupy the right 30%:
+
+* **"Show labels" (top)** — a `CheckButtons` widget with one toggle per
+  body.  Clicking a button calls `_on_label_toggle(label)`, which flips
+  `_show_labels[idx]` and calls `set_visible()` on the corresponding
+  `Text` artist.
+* **"Center on" (bottom)** — a `RadioButtons` widget offering
+  `"(absolute)"` plus one option per body.  Clicking an option calls
+  `_on_center_change(label)`, which updates `_center_idx` and recomputes
+  axis limits.
+
+Using `fig.add_axes([left, bottom, width, height])` with explicit
+coordinates gives precise control over placement without depending on
+`GridSpec` or `subplot_mosaic`, which don't play well with widget axes.
+
+### Reference-frame transformation
+
+All positions are pre-computed once at construction and stored in
+`_pos_all` with shape `(n_steps, n_bodies, 3)`.  `_relative_positions()`
+returns the same array unchanged when `_center_idx == -1`, or subtracts the
+center body's column when a body is selected:
+
+```python
+center = pos[:, center_idx : center_idx + 1, :]   # broadcast-safe slice
+return pos - center
+```
+
+This is applied lazily on every `_update_frame` call rather than eagerly
+re-storing a transformed copy, so switching the center body is instant and
+does not allocate extra memory proportional to trajectory length.
+
+### `blit=False` for widget compatibility
+
+`FuncAnimation` is created with `blit=False`.  Using `blit=True` would
+require the widget axes to be re-drawn explicitly on every tick, which is
+awkward.  With `blit=False` matplotlib redraws the whole figure on every
+frame.  For typical trajectory lengths (< 10 000 steps) this is fast
+enough; if performance is needed a future improvement could use
+`blit=True` with manual background restoration.
+
+### Trail control
+
+`trail_length=None` (default) shows the full history up to the current
+frame.  An integer value limits the trail to the last `trail_length` frames
+via `_trail_slice(frame_idx)`:
+
+```python
+slice(max(0, frame_idx - trail_length), frame_idx + 1)
+```
+
+The same slice is applied after the reference-frame transformation, so
+trails are always shown in the currently selected frame.
+
+### Axis limits on center change
+
+When the center body changes, `_update_axis_limits()` recomputes limits
+from the full transformed trajectory, excluding the center body itself
+(which is always at the origin).  An 8% margin is added on each side.
+This ensures all non-center bodies remain visible regardless of their
+orbital scale.
+
+### `animate()` returns `FuncAnimation`
+
+The public `animate()` method returns the `FuncAnimation` object rather
+than calling `plt.show()` internally.  This follows the matplotlib idiom
+of keeping lifecycle decisions with the caller: the user can embed the
+viewer inside a larger GUI, save it with `anim.save()`, or call
+`plt.show()` at their discretion.  A convenience `show()` wrapper handles
+the common case.
+
+---
+
 ## Roadmap
 
 | Step | Module | Status |
@@ -617,4 +702,4 @@ level (Leapfrog: oscillates near 10⁻⁶; RK4: drifts secularly).
 | 5 | `orbital.py` — state vectors ↔ Keplerian elements | ✅ Done |
 | 6 | `io/` — config reader/writer, trajectory output | ✅ Done |
 | 7 | `solar_system/` — built-in bodies, JPL Horizons fetcher | ✅ Done |
-| 8 | `viz/` — matplotlib visualization | ✅ Done |
+| 8 | `viz/` — matplotlib static + interactive visualization | ✅ Done |
