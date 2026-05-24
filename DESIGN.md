@@ -490,11 +490,11 @@ float literals for all finite values; `max_dt = None` is simply omitted
 `BodyData` is a frozen dataclass holding `mu`, `radius`, and
 `j_coefficients` for each body.  It deliberately has **no** position or
 velocity: those are either provided by the caller or fetched from Horizons.
-This separation of concerns means the physical data catalogue never goes
+This separation of concerns means the physical data catalog never goes
 stale (masses and radii change far more slowly than orbital positions).
 
 The `BODY_DATA` dictionary covers the Sun, eight planets, the Moon, Pluto,
-and Ceres.  `make_body(name, position, velocity)` combines catalogue data
+and Ceres.  `make_body(name, position, velocity)` combines catalog data
 with caller-supplied state vectors into a `Body`.  One-liner aliases
 (`sun()`, `earth()`, …) default position and velocity to zero, useful when
 state vectors will be assigned later.
@@ -523,9 +523,9 @@ between `=` and `-`) that Horizons uses.
 #### `fetch_body` design
 `fetch_body(name, epoch, ...)` accepts optional keyword overrides
 (`horizons_id`, `mu`, `mass`, `radius`) so that bodies not in the built-in
-catalogue (minor planets, spacecraft targets, etc.) can still be queried by
+catalog (minor planets, spacecraft targets, etc.) can still be queried by
 passing a Horizons ID and explicit physical parameters.  If neither the
-catalogue nor the caller supplies a gravitational parameter, a `HorizonsError`
+catalog nor the caller supplies a gravitational parameter, a `HorizonsError`
 is raised immediately with a helpful message.
 
 #### `fetch_system` and barycentric coordinates

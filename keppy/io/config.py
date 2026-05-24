@@ -462,7 +462,7 @@ def build_integrator(config: SimulationConfig):
     Raises
     ------
     ValueError
-        If the integrator type string is not recognised.
+        If the integrator type string is not recognized.
     """
     from keppy.acceleration import PairwiseAccelerationCalculator
     from keppy.integrator import (
@@ -498,7 +498,7 @@ def build_timestep_manager(config: SimulationConfig):
     Raises
     ------
     ValueError
-        If the timestep manager type string is not recognised.
+        If the timestep manager type string is not recognized.
     """
     from keppy.timestep import (
         ConstantTimeStepManager,

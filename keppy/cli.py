@@ -416,8 +416,101 @@ def cmd_solar(args) -> int:
     return 0
 
 
+_EXAMPLE_CONFIG = """\
+# keppy simulation configuration — TOML format
+# Run with:  keppy run my_sim.toml [--plot] [--save results.npz]
+
+# ---------------------------------------------------------------------------
+# Simulation parameters
+# ---------------------------------------------------------------------------
+[simulation]
+t_end        = 3.156e7    # end time in seconds (≈ 1 Julian year)
+output_every = 1          # record a snapshot every N accepted steps
+max_retries  = 10         # max consecutive step retries for adaptive methods
+
+# ---------------------------------------------------------------------------
+# Integration algorithm
+# ---------------------------------------------------------------------------
+[integrator]
+type = "leapfrog"         # rk4 | rk45 | leapfrog | yoshida
+
+# RK45-only options (ignored for other integrators):
+# rtol   = 1e-09          # relative tolerance
+# atol   = 1e-03          # absolute tolerance
+# min_dt = 1.0            # minimum step size in seconds
+
+# ---------------------------------------------------------------------------
+# Time-step management
+# ---------------------------------------------------------------------------
+[timestep]
+type = "constant"         # constant | acceleration | scaled
+dt   = 86400.0            # initial / fixed step size in seconds (1 day)
+
+# AccelerationTimeStepManager options (type = "acceleration"):
+# a_min           = 0.01  # fractional acceleration change → increase step
+# a_max           = 0.10  # fractional acceleration change → decrease step
+# increase_factor = 2.0
+# decrease_factor = 2.0
+# min_dt          = 1.0
+# max_dt          = 1e6   # omit for no upper limit
+
+# ScaledTimeStepManager options (type = "scaled"):
+# q_target      = 0.03    # target RMS fractional acceleration change
+# exponent      = 0.3     # scaling aggressiveness (0 = no scaling)
+# reject_factor = 3.0     # reject step if q > reject_factor * q_target
+# max_factor    = 5.0     # maximum growth per step
+# min_factor    = 0.1     # maximum shrinkage per step
+
+# ---------------------------------------------------------------------------
+# Bodies  (repeat [[bodies]] once per body)
+# ---------------------------------------------------------------------------
+[[bodies]]
+name     = "Sun"
+mu       = 1.327124400180e20   # m³ s⁻²  (use mu OR mass, not both)
+position = [0.0, 0.0, 0.0]    # meters
+velocity = [0.0, 0.0, 0.0]    # m s⁻¹
+
+[[bodies]]
+name     = "Earth"
+mass     = 5.972e24            # kg
+position = [1.495978707e11, 0.0, 0.0]
+velocity = [0.0, 29784.69, 0.0]
+
+# Bodies can also be specified via Keplerian elements
+# (elements are converted to state vectors at load time):
+# [[bodies]]
+# name        = "Mars"
+# mass        = 6.39e23
+# center_body = "Sun"          # must appear earlier in the [[bodies]] list
+# elements.a    = 2.2794e11    # semi-major axis in meters
+# elements.e    = 0.0934       # eccentricity
+# elements.i    = 1.85         # inclination in degrees
+# elements.node = 49.6         # longitude of ascending node, degrees
+# elements.peri = 286.5        # argument of periapsis, degrees
+# elements.M    = 19.4         # mean anomaly at epoch, degrees
+"""
+
+
+def cmd_show_config(args) -> int:  # noqa: ARG001
+    """Print an annotated example TOML config to stdout."""
+    print(_EXAMPLE_CONFIG.rstrip())
+    return 0
+
+
 def cmd_run(args) -> int:
     """Load and execute a TOML simulation config file."""
+    # --show-config prints the template and exits without needing a file
+    if getattr(args, "show_config", False):
+        return cmd_show_config(args)
+
+    if not args.config:
+        print(
+            "Error: CONFIG argument is required unless --show-config is given.\n"
+            "       Use 'keppy run --show-config' to print an example config.",
+            file=sys.stderr,
+        )
+        return 1
+
     try:
         config = io.load_config(args.config)
     except FileNotFoundError:
@@ -562,8 +655,12 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     p_r.add_argument(
-        "config", metavar="CONFIG",
+        "config", metavar="CONFIG", nargs="?", default=None,
         help="Path to a TOML simulation configuration file.",
+    )
+    p_r.add_argument(
+        "--show-config", action="store_true",
+        help="Print an annotated example config file and exit.",
     )
     p_r.add_argument(
         "--plot", action="store_true",

@@ -1,4 +1,4 @@
-"""Tests for keppy.solar_system — bodies catalogue and Horizons fetcher."""
+"""Tests for keppy.solar_system — bodies catalog and Horizons fetcher."""
 
 import math
 import socket
@@ -124,7 +124,7 @@ class TestBodyData:
 
 
 # ---------------------------------------------------------------------------
-# BODY_DATA catalogue
+# BODY_DATA catalog
 # ---------------------------------------------------------------------------
 
 class TestBodyDataCatalogue:
@@ -384,17 +384,17 @@ class TestFetchBodyMocked:
         # VX = -29.784... km/s → -29784... m/s
         assert b.velocity[0] == pytest.approx(-29784.52369399764, rel=1e-9)
 
-    def test_mu_from_catalogue(self):
+    def test_mu_from_catalog(self):
         with _mock_urlopen(_EARTH_RESPONSE):
             b = fetch_body("earth")
         assert b.mu == pytest.approx(BODY_DATA["earth"].mu, rel=1e-9)
 
-    def test_radius_from_catalogue(self):
+    def test_radius_from_catalog(self):
         with _mock_urlopen(_EARTH_RESPONSE):
             b = fetch_body("earth")
         assert b.radius == pytest.approx(BODY_DATA["earth"].radius)
 
-    def test_j_coefficients_from_catalogue(self):
+    def test_j_coefficients_from_catalog(self):
         with _mock_urlopen(_EARTH_RESPONSE):
             b = fetch_body("earth")
         assert b.j_coefficients == list(BODY_DATA["earth"].j_coefficients)

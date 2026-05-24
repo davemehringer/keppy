@@ -68,7 +68,7 @@ class BodyData:
 
 
 # ---------------------------------------------------------------------------
-# Physical data catalogue
+# Physical data catalog
 # ---------------------------------------------------------------------------
 
 BODY_DATA: dict[str, BodyData] = {
@@ -162,7 +162,7 @@ def make_body(
 ) -> Body:
     """
     Construct a :class:`~keppy.Body` with physical parameters from the
-    built-in catalogue.
+    built-in catalog.
 
     Parameters
     ----------
@@ -174,13 +174,13 @@ def make_body(
     Returns
     -------
     Body
-        ``body.mu`` and ``body.radius`` are set from the catalogue.
-        ``body.j_coefficients`` is a list copy of the catalogue tuple.
+        ``body.mu`` and ``body.radius`` are set from the catalog.
+        ``body.j_coefficients`` is a list copy of the catalog tuple.
 
     Raises
     ------
     KeyError
-        If *name* is not recognised.
+        If *name* is not recognized.
     """
     key = name.lower()
     if key not in BODY_DATA:

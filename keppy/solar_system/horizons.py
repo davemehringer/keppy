@@ -300,7 +300,7 @@ def fetch_body(
         body_mu = bd.mu
     else:
         raise HorizonsError(
-            f"No physical data for {name!r} in the built-in catalogue.  "
+            f"No physical data for {name!r} in the built-in catalog.  "
             "Pass mu= or mass= explicitly."
         )
 

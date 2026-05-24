@@ -14,6 +14,7 @@ from keppy.cli import (
     build_parser,
     cmd_list_bodies,
     cmd_run,
+    cmd_show_config,
     cmd_solar,
     main,
     parse_duration,
@@ -377,6 +378,36 @@ class TestCmdRun:
         cmd_run(args)
         err = capsys.readouterr().err
         assert "missing.toml" in err
+
+    def test_no_config_no_show_config_returns_error(self, capsys):
+        """'keppy run' without CONFIG or --show-config should error."""
+        args = build_parser().parse_args(["run"])
+        rc   = cmd_run(args)
+        assert rc != 0
+
+    def test_show_config_prints_template(self, capsys):
+        args = build_parser().parse_args(["run", "--show-config"])
+        rc   = cmd_show_config(args)
+        assert rc == 0
+        out = capsys.readouterr().out
+        assert "[simulation]"  in out
+        assert "[integrator]"  in out
+        assert "[timestep]"    in out
+        assert "[[bodies]]"    in out
+
+    def test_show_config_contains_example_body(self, capsys):
+        args = build_parser().parse_args(["run", "--show-config"])
+        cmd_show_config(args)
+        out = capsys.readouterr().out
+        assert "Sun"   in out
+        assert "Earth" in out
+
+    def test_show_config_via_cmd_run(self, capsys):
+        """--show-config works when routed through cmd_run."""
+        args = build_parser().parse_args(["run", "--show-config"])
+        rc   = cmd_run(args)
+        assert rc == 0
+        assert "[simulation]" in capsys.readouterr().out
 
     def test_saves_trajectory(self, tmp_path, capsys):
         cfg     = _write_config(tmp_path)
