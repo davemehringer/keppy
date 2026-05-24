@@ -404,6 +404,85 @@ raising an error.  `period_from_mu(mu)` is the explicit method to call when
 
 ---
 
+## `keppy/io/` — Configuration and Trajectory I/O
+
+### TOML for config, NumPy `.npz` for trajectories
+
+The C++ code used XML for configuration.  keppy uses **TOML** (stdlib
+`tomllib` in Python 3.11+) for config and **NumPy `.npz`** for trajectory
+output.
+
+TOML is chosen over JSON because it supports inline comments (critical for
+documenting simulation parameters), has clean syntax for tables and arrays,
+and is now part of the Python standard library.  YAML would be even more
+readable but requires a third-party dependency (`PyYAML`).
+
+NumPy `.npz` is chosen for trajectories over CSV because:
+- Files are typically 10–100× smaller (compressed binary vs. ASCII).
+- Exact floating-point round-trip: no precision loss from decimal formatting.
+- Zero additional dependencies.
+- `np.load()` gives back named arrays directly; no parsing step.
+
+A CSV exporter is also provided as a convenience for quick inspection in a
+spreadsheet or plotting tool.
+
+### `SimulationConfig` as a dataclass tree
+
+The full simulation specification decomposes cleanly into nested dataclasses:
+
+```
+SimulationConfig
+  ├── bodies: list[BodyConfig]
+  ├── integrator: IntegratorConfig
+  └── timestep: TimestepConfig
+```
+
+Each dataclass carries defaults for every optional field.  This means a
+minimal config only needs `bodies` and `t_end`; everything else has a
+sensible default.  The C++ code spread configuration across constructor
+arguments, separate setter methods, and XML attributes, making it hard to
+see what was actually set.
+
+### Orbital elements as an input-only convenience
+
+TOML config files can specify a body's initial conditions using Keplerian
+orbital elements rather than state vectors:
+
+```toml
+[[bodies]]
+name        = "Mars"
+mass        = 6.39e23
+center_body = "Sun"
+elements.a  = 2.2794e11
+elements.e  = 0.0934
+...
+```
+
+`load_config` converts elements → state vectors immediately using
+`elements_to_vectors`.  The `BodyConfig` dataclass always holds state
+vectors (position and velocity).  This keeps the rest of the code
+element-agnostic and `save_config` always writes state vectors — there is
+no ambiguity about which representation is canonical.
+
+### `build_integrator` and `build_timestep_manager` as factories
+
+Rather than encoding integrator selection inside `NBodySystem` or
+`config_to_system`, two standalone factory functions read the config and
+return the appropriate concrete object.  This keeps each function small,
+testable in isolation, and easy to extend: adding a new integrator type
+means adding one `case` branch in `build_integrator`.
+
+### TOML writer without third-party dependencies
+
+`tomllib` (stdlib) is read-only.  Rather than adding `tomli_w` as a
+dependency, `save_config` uses a minimal hand-rolled writer.  The config
+structure is a predictable hierarchy of scalars, float arrays, and string
+scalars — no arbitrary nesting.  Python's `repr(float)` produces valid TOML
+float literals for all finite values; `max_dt = None` is simply omitted
+(TOML has no null/NaN literal).
+
+---
+
 ## Roadmap
 
 | Step | Module | Status |
@@ -413,6 +492,6 @@ raising an error.  `period_from_mu(mu)` is the explicit method to call when
 | 3 | `integrator.py` — RK4, adaptive RK, symplectic | ✅ Done |
 | 4 | `timestep.py` — adaptive step sizing | ✅ Done |
 | 5 | `orbital.py` — state vectors ↔ Keplerian elements | ✅ Done |
-| 6 | `io/` — config reader/writer, trajectory output | ⬜ |
+| 6 | `io/` — config reader/writer, trajectory output | ✅ Done |
 | 7 | `solar_system/` — built-in bodies, JPL Horizons fetcher | ⬜ |
 | 8 | Visualization — matplotlib / plotly | ⬜ |

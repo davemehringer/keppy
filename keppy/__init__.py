@@ -28,6 +28,7 @@ from keppy.orbital import (
     vectors_to_elements,
 )
 from keppy import constants
+from keppy import io
 
 __all__ = [
     "Body", "Frame", "Origin",
@@ -47,4 +48,5 @@ __all__ = [
     "solve_kepler",
     "vectors_to_elements",
     "constants",
+    "io",
 ]
