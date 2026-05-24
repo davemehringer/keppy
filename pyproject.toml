@@ -13,6 +13,9 @@ dependencies = [
     "numpy>=1.26",
 ]
 
+[project.scripts]
+keppy = "keppy.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8",

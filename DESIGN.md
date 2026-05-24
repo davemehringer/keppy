@@ -703,3 +703,83 @@ the common case.
 | 6 | `io/` — config reader/writer, trajectory output | ✅ Done |
 | 7 | `solar_system/` — built-in bodies, JPL Horizons fetcher | ✅ Done |
 | 8 | `viz/` — matplotlib static + interactive visualization | ✅ Done |
+| 9 | `cli.py` — command-line interface (`keppy solar` / `run` / `list-bodies`) | ✅ Done |
+
+---
+
+## `keppy/cli.py` — Command-Line Interface
+
+### Sub-command structure
+
+Three sub-commands mirror keplerpp's two usage modes (named-body simulation
+and config-file simulation) and add a convenience helper:
+
+| Sub-command      | Purpose |
+|---|---|
+| `keppy solar`    | Simulate named solar system bodies (built-in or Horizons) |
+| `keppy run`      | Execute a TOML simulation config file |
+| `keppy list-bodies` | Print all built-in body names |
+
+`argparse` from the standard library is used — no extra runtime dependency.
+
+### Duration / time-step parsing
+
+A small `parse_duration(s)` helper converts human-readable strings to
+seconds:
+
+| Input    | Meaning              |
+|---|---|
+| `1y`     | 1 Julian year (365.25 d) |
+| `365d`   | 365 days |
+| `24h`    | 24 hours |
+| `3600s`  | 3 600 seconds |
+| `3600`   | bare number → seconds |
+
+This removes the need to remember SI values for common durations.
+
+### Built-in initial conditions
+
+`keppy solar` works offline by default: each body starts on an approximate
+circular orbit in the x-y plane at its mean semi-major axis.  This gives
+a quick, valid simulation without network access.
+
+The `--horizons` flag switches to JPL Horizons for real state vectors at a
+specified `--epoch` (default `2000-01-01`), reproducing keplerpp's behavior
+for accurate planetary positions.
+
+### Entry points
+
+The CLI is registered as a console script so it is available as both
+`keppy` (after installation) and `python -m keppy`:
+
+```toml
+[project.scripts]
+keppy = "keppy.cli:main"
+```
+
+`keppy/__main__.py` provides the `python -m keppy` path by calling
+`keppy.cli.main()`.
+
+### Output after simulation
+
+After every run keppy prints a summary table:
+
+```
+──────────────────────────────────────────────────────
+  Bodies     : sun, earth, mars
+  Steps      : 365
+  Duration   : 365.00 days
+  Energy drift: 3.17e-09  (|ΔE/E₀|)
+──────────────────────────────────────────────────────
+```
+
+Optional output flags:
+- `--save PATH` — save full trajectory as a NumPy `.npz` file
+- `--plot` — open the interactive `OrbitViewer` after simulation
+- `--plot-energy` — show the energy conservation diagnostic
+
+### `argparse.ArgumentDefaultsHelpFormatter`
+
+The `solar` and `run` sub-parsers use
+`ArgumentDefaultsHelpFormatter` so default values appear automatically
+in `keppy solar --help` without duplicating them in every help string.
