@@ -283,19 +283,17 @@ def _handle_plot(
     plane: str,
     trail_length: int | None,
 ) -> None:
-    """Open an interactive OrbitViewer."""
-    from keppy.viz.interactive import OrbitViewer
-    import matplotlib.pyplot as plt
+    """Open the interactive VTK orbit viewer."""
+    from keppy.viz.vtk_viewer import VTKOrbitViewer
 
-    viewer = OrbitViewer(
+    viewer = VTKOrbitViewer(
         records,
         body_names=body_names,
         unit=unit,
         plane=plane,
         trail_length=trail_length,
     )
-    _anim = viewer.animate(interval=40)   # noqa: F841 — must stay in scope
-    plt.show()
+    viewer.show(interval=40)
 
 
 def _handle_plot_energy(records: list, body_names: list[str]) -> None:
@@ -629,7 +627,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_s.add_argument(
         "--plane", choices=["xy", "xz", "yz"], default="xy",
-        help="Projection plane for --plot.",
+        help="Initial camera plane for --plot; the VTK view can then rotate freely.",
     )
     p_s.add_argument(
         "--trail-length", type=int, default=None, metavar="N",
@@ -637,7 +635,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_s.add_argument(
         "--plot", action="store_true",
-        help="Open the interactive OrbitViewer after simulation.",
+        help="Open the interactive VTK 3-D orbit viewer after simulation.",
     )
     p_s.add_argument(
         "--plot-energy", action="store_true",
@@ -664,7 +662,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_r.add_argument(
         "--plot", action="store_true",
-        help="Open the interactive OrbitViewer after simulation.",
+        help="Open the interactive VTK 3-D orbit viewer after simulation.",
     )
     p_r.add_argument(
         "--plot-energy", action="store_true",

@@ -24,6 +24,9 @@ dev = [
 viz = [
     "matplotlib>=3.7",
 ]
+vtk = [
+    "vtk>=9.6,<10",
+]
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -20,10 +20,20 @@ a pairwise N-body gravitational simulation library originally written in C++.
 
 ## Installation
 
+Install from this repository; the unrelated PyPI project named `keppy` does
+not provide this library or its CLI:
+
 ```bash
-pip install keppy          # core library (NumPy only)
-pip install "keppy[viz]"   # add matplotlib for plots and the orbit viewer
+git clone https://github.com/davemehringer/keppy.git
+cd keppy
+python -m pip install -e .              # core library (NumPy only)
+python -m pip install -e ".[viz]"      # add matplotlib static plots
+python -m pip install -e ".[vtk]"      # add the interactive 3-D VTK viewer
 ```
+
+The editable install creates the `keppy` command used below. If you only need
+the library from a checkout without installing it, use `python -m keppy` in
+place of `keppy`.
 
 ---
 
@@ -51,21 +61,23 @@ records = run(system,
 print(f"Steps: {len(records)}, final time: {records[-1].time / DAY:.1f} days")
 ```
 
-### Interactive orbit viewer
+### Interactive 3-D orbit viewer
 
 ```python
-from keppy.viz import OrbitViewer
-import matplotlib.pyplot as plt
+from keppy.viz.vtk_viewer import VTKOrbitViewer
 
-viewer = OrbitViewer(records, body_names=["Sun", "Earth"])
-anim   = viewer.animate(interval=40)   # keep reference alive
-plt.show()
+viewer = VTKOrbitViewer(records, body_names=["Sun", "Earth"])
+viewer.show()
 ```
 
 Controls in the viewer window:
-- **Show labels** panel — toggle body name annotations on/off.
-- **Center on** panel — switch the reference frame to any body or back to
-  the absolute frame.
+- **Left-drag** rotates the trackball camera freely; the mouse wheel zooms.
+- Press **Space** to pause/resume playback before making a selection.
+- **Right-click a body** to pause and centre the reference frame on it; press
+  **0** to restore the absolute frame. Press **1–9** to centre the matching
+  body in the displayed order without clicking.
+- Press **n** to show/hide labels and **o** to show/hide trails.
+- The renderer background is black by default.
 
 ### Solar system bodies
 
@@ -139,9 +151,9 @@ keppy list-bodies
 | `--horizons` | off | Fetch state vectors from JPL Horizons |
 | `--epoch` | `2000-01-01` | Epoch date for Horizons queries |
 | `--unit` | `au` | Plot axis unit: `au`, `km`, or `m` |
-| `--plane` | `xy` | Projection plane: `xy`, `xz`, or `yz` |
+| `--plane` | `xy` | Initial VTK camera plane: `xy`, `xz`, or `yz`; the camera can rotate freely afterwards |
 | `--trail-length` | — | Limit trail to last N frames in `--plot` |
-| `--plot` | off | Open interactive `OrbitViewer` after simulation |
+| `--plot` | off | Open the VTK interactive 3-D orbit viewer (requires `keppy[vtk]`) |
 | `--plot-energy` | off | Show energy conservation diagnostic |
 | `--save PATH` | — | Save trajectory to PATH (`.npz` binary) |
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
+import sys
 from unittest.mock import patch
 
 import numpy as np
@@ -112,6 +113,10 @@ class TestBuildParser:
         args = build_parser().parse_args(["solar", "--plot", "--plot-energy"])
         assert args.plot is True
         assert args.plot_energy is True
+
+    def test_solar_plot_plane_is_an_initial_camera_orientation(self):
+        args = build_parser().parse_args(["solar", "--plot", "--plane", "yz"])
+        assert args.plane == "yz"
 
     def test_solar_horizons_flag(self):
         args = build_parser().parse_args(
@@ -462,9 +467,9 @@ class TestMain:
         """Smoke test: python -m keppy list-bodies exits 0."""
         import subprocess
         result = subprocess.run(
-            ["python", "-m", "keppy", "list-bodies"],
+            [sys.executable, "-m", "keppy", "list-bodies"],
             capture_output=True, text=True,
-            cwd="/home/user/keppy",
+            cwd=Path(__file__).resolve().parents[1],
         )
         assert result.returncode == 0
         assert "earth" in result.stdout.lower()
